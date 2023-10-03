@@ -15,6 +15,10 @@ import passport from "passport";
 import initializePassport from "./config/passport.config.js";
 import { ioConnection } from "./controllers/chat.controller.js";
 import { ENVIRONMENT, addLogger, loggerInfo } from "./logger/logger.js";
+
+import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerUIExpress from 'swagger-ui-express';
+
 // import cookieParser from 'cookie-parser';
 // Mongodb URL : "mongodb+srv://Matias-Perroni:fcKP3TXvcILtCNWu@cluster0.ymwavy3.mongodb.net/ecommerce?retryWrites=true&w=majority"
 
@@ -89,7 +93,26 @@ app.get("/api/loggerTest", (req, res) => {
 });
 
 io.on("connection", ioConnection);
+
+//documentacion swagger
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.1',
+        info: {
+            title: 'API documentation for ecommerce project for Coderhouse.',
+            description: 'How to use the API.'
+        }
+    },
+    apis: [`./src/docs/**/*.yaml`]
+}
+
+// creamos el specs
+const specs = swaggerJSDoc(swaggerOptions);
+// Declaramos swagger API - endpoint
+app.use('/apidocs', swaggerUIExpress.serve, swaggerUIExpress.setup(specs));
+
 //todo que el usuario que manda el msj al chat salga del usuario que esta logueado
 //asignar carrito al crear usuario
 //popular el carrito
 //ticket al usuario
+//todo: manejar error cuando estas deslogueado en api/products

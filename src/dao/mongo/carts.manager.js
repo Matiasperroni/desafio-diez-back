@@ -88,26 +88,15 @@ class CartManagerDB {
     async updateWholeCart(cartID, prods) {
         try {
             // const cartToUpdate = await this.cartsModel.findById(cartID);
+            console.log(cartID, prods, "a ver si llega aca");
             const updatedCart = await this.cartsModel.findOneAndUpdate(
                 { _id: cartID },
                 { product: prods },
-                (err) => {
-                    if (err) {
-                        console.error(
-                            "An error updating the cart has ocurred",
-                            err
-                        );
-                    } else {
-                        console.log("Cart has been updated");
-                    }
-                }
             );
             console.log("updated cart", updatedCart);
-
             return updatedCart;
         } catch (error) {
             throw new Error("Couldn´t update cart.");
-            // console.log("no anda");
         }
     }
     async emptyCart(cartID) {

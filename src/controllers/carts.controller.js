@@ -4,16 +4,26 @@
 import { cartRepository, productRepository } from "../repositories/index.js";
 import CustomError from "../utils/errors/CustomError.js";
 import { createCartError } from "../utils/errors/errorInformation.js";
-import EErrors from '../utils/errors/Enum.js';
+import EErrors from "../utils/errors/Enum.js";
 
 export const getCarts = async (req, res) => {
-    const carts = await cartRepository.getAllCarts();
-    res.send(carts);
+    try {
+        const carts = await cartRepository.getAllCarts();
+        if (carts) {
+            res.status(200).send(carts);
+        } else {
+            req.logger.error(`Server error getting carts`);
+            res.status(404).send("Server error.");
+        }
+    } catch (error) {
+        req.logger.error(`Interval server error creating cart ${error}`);
+        res.status(500).send("Server error.");
+    }
 };
 
 export const createNewCart = async (req, res) => {
     try {
-        const cart = await cartRepository.createNewCart();
+        const cart = await cartRepository.createCart();
         if (!cart) {
             CustomError.createError({
                 name: "Request error",
@@ -22,10 +32,10 @@ export const createNewCart = async (req, res) => {
                 message: "Error creating cart.",
             });
         }
-        res.send(cart);
+        res.status(200).send(cart);
     } catch (error) {
-        req.logger.error(`Interval server error creating cart ${error}`)
-        res.status(500).send("Error al obtener los datos");
+        req.logger.error(`Server error creating cart ${error}`);
+        res.status(500).send("Server error could´t create cart.");
     }
 };
 
@@ -33,19 +43,19 @@ export const getCartByID = async (req, res) => {
     try {
         const cartID = req.params.cid;
         const cart = await cartRepository.getById(cartID);
-        if(!cart) {
+        if (!cart) {
             CustomError.createError({
                 name: "Request error",
                 cause: createCartError(cartID),
                 code: EErrors.ROUTING_ERROR,
                 message: "Error creating cart.",
-            })
+            });
         }
         const products = cart.products;
         // res.send({products});
         res.render("cart", { products });
     } catch (error) {
-        req.logger.error(`Interval server error getting cart by id ${error}`)
+        req.logger.error(`Server error getting cart by id ${error}`);
         res.status(500).send("Can´t get cart data.");
     }
 };
@@ -73,16 +83,16 @@ export const addProductToCart = async (req, res) => {
                 cause: createCartError(cartID, prodID),
                 code: EErrors.ROUTING_ERROR,
                 message: "Error creating cart.",
-            })
+            });
         }
-        const productToAdd = await productRepository.getProductById(prodID)
-        if(user.role === "Premium" && user.email === productToAdd.owner){ 
+        const productToAdd = await productRepository.getProductById(prodID);
+        if (user.role === "Premium" && user.email === productToAdd.owner) {
             CustomError.createError({
                 name: "Request error",
                 cause: createCartError(cartID, prodID),
                 code: EErrors.ROUTING_ERROR,
                 message: "You can not add an item that its yours to your cart.",
-            })
+            });
         }
         const productAddedToCart = await cartRepository.addToCart(
             cartID,
@@ -90,7 +100,9 @@ export const addProductToCart = async (req, res) => {
         );
         res.send(productAddedToCart);
     } catch (error) {
-        req.logger.error(`Interval server error adding product to cart${error}`)
+        req.logger.error(
+            `Server error adding product to cart${error}`
+        );
         res.status(500).send("Error, unable to obtain data");
     }
 };
@@ -103,12 +115,18 @@ export const deleteProdFromCart = async (req, res) => {
 };
 
 export const updateWholeCart = async (req, res) => {
-    const cartID = req.params.cid;
+    try {
+        const cartID = req.params.cid;
     const prod = req.body;
-    // console.log(cartID, prod);
     const updatedCart = await cartRepository.updateWholeCart(cartID, prod);
-    // console.log("a ver", updatedCart);
-    res.send(updatedCart);
+    res.status(200).send(updatedCart);
+    } catch(error) {
+        req.logger.error(
+            `Server error updating cart ${error}`
+        );
+        res.status(500).send("Server error updating cart.");
+    }
+    
 };
 
 export const updateQuantity = async (req, res) => {
@@ -126,13 +144,13 @@ export const updateQuantity = async (req, res) => {
 export const deleteCart = async (req, res) => {
     const cid = req.params.cid;
     const deletedCart = await cartRepository.emptyCart(cid);
-    if(!deletedCart) {
+    if (!deletedCart) {
         CustomError.createError({
             name: "Request error",
             cause: createCartError(cid),
             code: EErrors.ROUTING_ERROR,
             message: "Error creating cart.",
-        })
+        });
     }
     console.log(deletedCart);
     res.send(deletedCart);
@@ -153,7 +171,7 @@ export const finishPurchase = async (req, res) => {
             res.status(500).send("error: error trying to purchase.");
         }
     } catch (error) {
-        req.logger.error(`Interval server error finishing purchase ${error}`)
+        req.logger.error(`Interval server error finishing purchase ${error}`);
         res.status(500).send("Error purchasing.");
     }
 };
